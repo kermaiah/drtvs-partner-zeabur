@@ -7,7 +7,6 @@ const {
 } = require('discord.js');
 const { QuickDB } = require('quick.db');
 const db = new QuickDB();
-const YOUR_AD = process.env.YOUR_AD;
 
 module.exports = async (interaction) => {
   try {
@@ -99,7 +98,7 @@ module.exports = async (interaction) => {
         if (logChannel) await logChannel.send({ embeds: [embed] });
 
         if (customId.startsWith('accept_')) {
-          const formattedAd = YOUR_AD || '**[No server ad configured]**';
+          const formattedAd = `# ㅤ          ㅤ[drtvs](https://discord.gg/PvDaczMqxn)\n-# ㅤ                ㅤ#open4ps\n-# ㅤ                ㅤ**filo** • __partner__ • **roblox**\n-# ㅤ               ㅤ**sfw** • ~~no snitch~~ • **social**\n\n@everyone`;
           await ticketChannel.send({ content: `${formattedAd}\n\nApproved. Here's our ad <@${userId}>` });
 
           if (publicChannel && adMessage) {
