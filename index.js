@@ -116,7 +116,7 @@ client.on('messageCreate', async (message) => {
   await logChannel.send({ embeds: [embed], components: [row] });
 
   await message.reply({
-    content: 'Your partnership ad has been submitted to staff. Please wait for approval.',
+    content: 'Your partnership ad has been submitted to staff. Please wait for approval.\n-# Note: Approval might take a while since the admin could be busy or not around.',
     flags: 64
   });
 });
