@@ -15,8 +15,12 @@ module.exports = async function messageHandler(client, message) {
   if (message.author.bot) return;
   if (!message.channel.name.includes('ticket')) return;
 
+  // 👇 Remove zero-width characters (like \u200B, \u200C, etc.)
+  const cleanedContent = message.content.replace(/[\u200B-\u200D\uFEFF|\s]+/g, '');
+
+  // 👇 Regex runs on cleaned content
   const inviteRegex = /https?:\/\/(www\.)?(discord\.gg|discord\.com\/invite)\/[\w-]+/gi;
-  if (!inviteRegex.test(message.content)) return;
+  if (!inviteRegex.test(cleanedContent)) return;
 
   const staffChannelId = await db.get('publicChannel');
   const staffChannel = await client.channels.fetch(staffChannelId).catch(() => null);
@@ -44,6 +48,6 @@ module.exports = async function messageHandler(client, message) {
   await staffChannel.send({ embeds: [embed], components: [row] });
 
   await message.channel.send({
-    content: `<@${message.author.id}> Your partnership request has been submitted to staff! Please wait for approval.`,
+    content: `<@${message.author.id}> Your partnership request has been submitted to staff! Please wait for approval.\n-# Note: Approval might take a while since the admin could be busy or not around.`,
   });
 };
