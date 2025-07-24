@@ -52,7 +52,7 @@ module.exports = {
     // Create the embed + button to post in ticket channel
     const embed = new EmbedBuilder()
       .setTitle('Request a Partnership Ticket')
-      .setDescription('Click the button below to open a ticket and submit your server ad.')
+      .setDescription('Click the button below to open a ticket and submit your server ad.\n-# Reminder: Leaving the server as a rep may lead to your ad being removed from the partnership channel')
       .setColor('#FFFFFF')
       .setThumbnail(guild.iconURL())
       .setFooter({ text: 'derivatives', iconURL: guild.iconURL() })
