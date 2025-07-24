@@ -7,16 +7,25 @@ const {
 } = require('discord.js');
 const { QuickDB } = require('quick.db');
 const db = new QuickDB();
+const YOUR_AD = process.env.YOUR_AD;
 
 module.exports = async (interaction) => {
   try {
-    if (interaction.type === InteractionType.MessageComponent && interaction.isButton()) {
+    if (
+      interaction.type === InteractionType.MessageComponent &&
+      interaction.isButton()
+    ) {
       const { customId, user, guild, client } = interaction;
 
       // 🎫 Create Ticket
       if (customId === 'create_ticket') {
         const existing = guild.channels.cache.find(c => c.name === `partner-${user.id}`);
-        if (existing) return interaction.reply({ content: 'You already have an open ticket.', flags: 64 });
+        if (existing) {
+          if (!interaction.replied) {
+            return interaction.reply({ content: 'You already have an open ticket.', ephemeral: true });
+          }
+          return;
+        }
 
         const channel = await guild.channels.create({
           name: `partner-${user.id}`,
@@ -52,11 +61,15 @@ module.exports = async (interaction) => {
           ]
         });
 
-        return interaction.reply({ content: 'Ticket created!', flags: 64 });
+        return interaction.reply({ content: 'Ticket created!', ephemeral: true });
       }
 
       // ✅ Accept / ❌ Reject Partnership
       if (customId.startsWith('accept_') || customId.startsWith('reject_')) {
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.deferReply({ ephemeral: true });
+        }
+
         const [, ticketChannelId, userId] = customId.split('_');
         const ticketChannel = guild.channels.cache.get(ticketChannelId);
         const logChannelId = await db.get('logChannel');
@@ -66,9 +79,8 @@ module.exports = async (interaction) => {
         const publicChannel = guild.channels.cache.get(publicChannelId);
 
         if (!ticketChannel) {
-          return interaction.reply({
-            content: `Ticket not found. Channel: <#${ticketChannelId}>`,
-            flags: 64
+          return interaction.editReply({
+            content: `Ticket not found. Channel: <#${ticketChannelId}>`
           });
         }
 
@@ -79,7 +91,6 @@ module.exports = async (interaction) => {
         const requester = await guild.members.fetch(userId).catch(() => null);
         const requesterTag = requester ? requester.user.tag : 'Unknown User';
 
-        // Correct way to get ticket number (count of partner channels)
         const position = guild.channels.cache.filter(c => c.name?.startsWith('partner-')).size;
 
         const embed = new EmbedBuilder()
@@ -98,22 +109,43 @@ module.exports = async (interaction) => {
         if (logChannel) await logChannel.send({ embeds: [embed] });
 
         if (customId.startsWith('accept_')) {
-          const formattedAd = `# ㅤ          ㅤ[drtvs](https://discord.gg/PvDaczMqxn)\n-# ㅤ                  ㅤ#open4ps\n-# ㅤ                ㅤ**filo** • __partner__ • **roblox**\n-# ㅤ               ㅤ**sfw** • ~~no snitch~~ • **social**\n\n@everyone`;
-          await ticketChannel.send({ content: `${formattedAd}\n\nPosted. Here's our ad <@${userId}>` });
+          const formattedAd = `# ㅤ          ㅤ[drtvs](https://discord.gg/PvDaczMqxn)\n-# ㅤ                  ㅤ#open4ps\n-# ㅤ                ㅤ**filo** • __partner__ • **roblox**\n-# ㅤ               ㅤ**sfw** • ~~no snitch~~ • **social**\n\n||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||||‍||
+@everyone @here`;
+          await ticketChannel.send({ content: formattedAd }); // Send the ad first
+          await ticketChannel.send({ content: `Approved. Here's our ad <@${userId}>` }); // Then the follow-up
+
+          const partnerRoleId = process.env.PARTNER_ROLE_ID;
+          const member = await guild.members.fetch(userId).catch(() => null);
+
+          if (member && partnerRoleId) {
+            try {
+              await member.roles.add(partnerRoleId);
+              console.log(`Assigned partner role to ${member.user.tag}`);
+            } catch (error) {
+              console.error(`Failed to assign partner role:`, error);
+            }
+          }
 
           if (publicChannel && adMessage) {
+            // Send their ad content first
+            await publicChannel.send({ content: adMessage.content });
+
+            // Then follow up with rep and ping
             await publicChannel.send({
-              content: `${adMessage.content}\n\nrep: <@${userId}>\n\n<@&1393769048482906142>`
+              content: `rep: <@${userId}>\n\n<@&1393769048482906142>`
             });
           }
         } else if (customId.startsWith('reject_')) {
           await ticketChannel.send({ content: `<@${userId}>, your partnership request was rejected.` });
         }
 
-        return interaction.reply({ content: 'Action completed.', flags: 64 });
+        return interaction.editReply({ content: 'Action completed.' });
       }
     }
   } catch (err) {
     console.error('Interaction error:', err);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ content: 'An error occurred.', ephemeral: true }).catch(() => {});
+    }
   }
 };
