@@ -51,6 +51,6 @@ module.exports = async function ticketManager(client, message) {
 
   // Confirm to user in ticket
   await message.channel.send({
-    content: `<@${message.author.id}> your partnership ad has been submitted to staff! Please wait for approval.`,
+    content: `<@${message.author.id}> your partnership ad has been submitted to staff! Please wait for approval.\n-# Note: Approval might take a while since the admin could be busy or not around.`,
   });
 };
